@@ -3,12 +3,83 @@ clear_console <- function() {
   os <- Sys.info()["sysname"]
   
   if (os == "Windows") {
-    system("cls", intern = FALSE)
+    shell("cls")  # usa o shell do Windows em vez de system()
   } else {
-    cat("\033[2J\033[H")  # Código ANSI para limpar
+    cat("\033[2J\033[H")  # limpa terminal no Linux/macOS
   }
+  
   invisible()
 }
+
+# Função para pausa
+aguardarRetorno <- function() {
+  cat("\nPressione Enter para continuar...")
+  readLines("stdin", n = 1)
+}
+
+
+# Função para configurar e carregar ambiente
+inicializarAmbiente <- function() {
+  diretorio <- getwd()
+  caminho_lib <- file.path(diretorio, "library")
+  
+  # Cria pasta "library" se não existir
+  if (!dir.exists(caminho_lib)) {
+    dir.create(caminho_lib, recursive = TRUE)
+    cat("📦 Pasta 'library' criada em:", caminho_lib, "\n")
+  }
+  
+  # Define caminho local e repositório CRAN
+  .libPaths(caminho_lib)
+  options(repos = c(CRAN = "https://cloud.r-project.org"))
+  
+  # Lista de pacotes necessários
+  pacotes_necessarios <- c("igraph")
+  
+  # Instala apenas os que faltam
+  pacotes_faltando <- pacotes_necessarios[!(pacotes_necessarios %in% installed.packages(lib.loc = caminho_lib)[, "Package"])]
+  
+  if (length(pacotes_faltando) > 0) {
+    cat("🔧 Instalando pacotes faltantes:", paste(pacotes_faltando, collapse = ", "), "\n")
+    install.packages(pacotes_faltando, lib = caminho_lib, quiet = TRUE)
+  }
+  
+  # Carrega os pacotes
+  lapply(pacotes_necessarios, library, character.only = TRUE)
+  
+  cat("Ambiente configurado e pacotes carregados!\n\n")
+
+  clear_console()
+}
+
+
+exibirMatrizAdjacencia <- function(dados) {
+  clear_console()
+  cat("=== MATRIZ DE ADJACÊNCIA ===\n\n")
+  
+  grafo <- dados$matriz_arestas
+  tipo <- dados$tipo
+  vertices <- sort(unique(c(grafo$V1, grafo$V2)))
+  
+  # Cria matriz quadrada (vértices x vértices)
+  matriz_adj <- matrix(0, nrow = length(vertices), ncol = length(vertices),
+                       dimnames = list(vertices, vertices))
+  
+  # Preenche as conexões
+  for (i in 1:nrow(grafo)) {
+    origem <- as.character(grafo$V1[i])
+    destino <- as.character(grafo$V2[i])
+    matriz_adj[origem, destino] <- 1
+    if (tipo == "Não Dirigido") {
+      matriz_adj[destino, origem] <- 1
+    }
+  }
+  
+  print(matriz_adj)
+  
+  aguardarRetorno()
+}
+
 
 # Função que receberá os arquivo .txt conforme foi proposto nos requesitos
 lerArquivo <- function() {
@@ -87,40 +158,28 @@ obterDadosGrafo <- function(arquivo) {
 }
 
 plotarGrafo <- function(dados) {
-  # Verifica se o igraph está instalado, se não, instala
-  if (!require(igraph, quietly = TRUE)) {
-    cat("Instalando pacote igraph...\n")
-    install.packages("igraph", quiet = TRUE)
-    library(igraph)
-  }
-  
   grafo <- dados$matriz_arestas
   tipo <- dados$tipo
+  nome_arquivo <- paste0("grafo_", tolower(tipo), ".png")
   
-  # Cria objeto igraph
-  if (tipo == "Dirigido") {
-    g <- graph_from_edgelist(as.matrix(grafo), directed = TRUE)
+  g <- if (tipo == "Dirigido") {
+    igraph::graph_from_edgelist(as.matrix(grafo), directed = TRUE)
   } else {
-    g <- graph_from_edgelist(as.matrix(grafo), directed = FALSE)
+    igraph::graph_from_edgelist(as.matrix(grafo), directed = FALSE)
   }
   
-  # Configurações do plot
-  plot(g, 
+  png(nome_arquivo, width = 800, height = 600)
+  plot(g,
        main = paste("Grafo", tipo),
        vertex.color = "lightblue",
        vertex.size = 20,
        vertex.label.cex = 1.2,
        edge.arrow.size = 0.5,
-       layout = layout_with_kk)  # Layout Kamada-Kawai
+       layout = igraph::layout_with_kk)
+  dev.off()
+  
+  cat("\nGrafo salvo como imagem em:", normalizePath(nome_arquivo), "\n")
 }
-
-# Função para pausa e retorno ao menu
-aguardarRetorno <- function() {
-  cat("\nPressione Enter para continuar...")
-  readLines("stdin", n = 1)
-}
-
-# FUNÇÕES EXTERNAS PARA O MENU
 
 exibirDadosGrafo <- function(dados) {
   clear_console()
@@ -135,6 +194,11 @@ exibirDadosGrafo <- function(dados) {
 verificarAdjacencia <- function(grafo, tipo) {
   clear_console()
   cat("=== VERIFICAR ADJACÊNCIA ===\n\n")
+  
+  # Mostra os vértices disponíveis
+  vertices_disponiveis <- sort(unique(c(grafo$V1, grafo$V2)))
+  cat("Vértices disponíveis:", paste(vertices_disponiveis, collapse = ", "), "\n\n")
+  
   cat("Digite vértice X: ")
   vX <- as.integer(readLines("stdin", n = 1))
   cat("Digite vértice Y: ")
@@ -145,31 +209,75 @@ verificarAdjacencia <- function(grafo, tipo) {
   } else {
     cat("\nVértices", vX, "e", vY, "não são adjacentes.\n")
   }
+  
   aguardarRetorno()
 }
+
 
 calcularGrau <- function(grafo, tipo) {
   clear_console()
   cat("=== CALCULAR GRAU DO VÉRTICE ===\n\n")
+  
+  # Exibe os vértices disponíveis
+  vertices_disponiveis <- sort(unique(c(grafo$V1, grafo$V2)))
+  cat("Vértices disponíveis:", paste(vertices_disponiveis, collapse = ", "), "\n\n")
+  
   cat("Digite o vértice: ")
-  v <- as.integer(readLines("stdin", n = 1))
-  grau <- sum(grafo$V1 == v) + if(tipo == "Não Dirigido") sum(grafo$V2 == v) else 0
-  cat("\nGrau do vértice", v, ":", grau, "\n")
+  v <- trimws(readLines("stdin", n = 1))  # mantém como texto
+  
+  if (!(v %in% vertices_disponiveis)) {
+    cat("\nVértice não encontrado no grafo!\n")
+    aguardarRetorno()
+    return()
+  }
+  
+  if (tipo == "Dirigido") {
+    grau_saida <- sum(grafo$V1 == v)
+    grau_entrada <- sum(grafo$V2 == v)
+    cat("\nGrau de saída:", grau_saida, "\n")
+    cat("Grau de entrada:", grau_entrada, "\n")
+    cat("Grau total:", grau_saida + grau_entrada, "\n")
+  } else {
+    grau <- sum(grafo$V1 == v | grafo$V2 == v)
+    cat("\nGrau do vértice", v, ":", grau, "\n")
+  }
+  
   aguardarRetorno()
 }
+
+
 
 buscarVizinhos <- function(grafo, tipo) {
   clear_console()
   cat("=== BUSCAR VIZINHOS ===\n\n")
-  cat("Digite o vértice: ")
-  v <- as.integer(readLines("stdin", n = 1))
+  
+  # Exibe os vértices disponíveis
+  vertices_disponiveis <- sort(unique(c(grafo$V1, grafo$V2)))
+  cat("Vértices disponíveis:", paste(vertices_disponiveis, collapse = ", "), "\n\n")
+  
+  cat("Digite o vértice (pode ser letra ou número): ")
+  v <- trimws(readLines("stdin", n = 1))  # mantém como texto
+  
+  if (!(v %in% vertices_disponiveis)) {
+    cat("\nVértice não encontrado no grafo!\n")
+    aguardarRetorno()
+    return()
+  }
+  
   vizinhos <- unique(grafo$V2[grafo$V1 == v])
   if (tipo == "Não Dirigido") {
     vizinhos <- unique(c(vizinhos, grafo$V1[grafo$V2 == v]))
   }
-  cat("\nVizinhos do vértice", v, ":", paste(vizinhos, collapse = ", "), "\n")
+  
+  if (length(vizinhos) == 0) {
+    cat("\nO vértice", v, "não possui vizinhos.\n")
+  } else {
+    cat("\nVizinhos do vértice", v, ":", paste(vizinhos, collapse = ", "), "\n")
+  }
+  
   aguardarRetorno()
 }
+
 
 visitarArestas <- function(grafo) {
   clear_console()
@@ -194,8 +302,11 @@ exibirGraficamente <- function(dados) {
 
 # Função para pré-processamento dos dados do arquivo
 main <- function() {
+
+  inicializarAmbiente()
   arquivo <- lerArquivo()
   dados <- obterDadosGrafo(arquivo)
+
   return(dados)
 }
 
@@ -215,6 +326,7 @@ menu <- function(dados) {
     cat("4 - Buscar vizinhos de um vértice\n")
     cat("5 - Visitar todas as arestas do grafo\n")
     cat("6 - Exibir grafo graficamente\n")
+    cat("7 - Exibir matriz de adjacência\n")
     cat("0 - Sair\n")
     
     cat("\nEscolha uma opção: ")
@@ -234,6 +346,7 @@ menu <- function(dados) {
       "4" = buscarVizinhos(grafo, tipo),
       "5" = visitarArestas(grafo),
       "6" = exibirGraficamente(dados),
+      "7" = exibirMatrizAdjacencia(dados),
       "0" = { cat("Encerrando programa...\n"); break },
       {
         cat("Opção inválida. Tente novamente.\n")
