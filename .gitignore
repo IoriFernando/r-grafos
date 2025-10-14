@@ -1,0 +1,18 @@
+# Pastas criadas pelo PyInstaller
+/dist/
+/build/
+/__pycache__/
+/*.spec
+
+# Arquivos de log
+*.log
+
+# Bibliotecas locais do R
+/library/
+
+# Arquivos temporários do sistema
+.DS_Store
+Thumbs.db
+
+# Python cache
+*.pyc
