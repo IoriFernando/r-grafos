@@ -44,7 +44,6 @@ inicializarAmbiente <- function() {
   lapply(pacotes_necessarios, library, character.only = TRUE)
 
   cat("✅ Ambiente configurado e pacotes carregados!\n\n")
-  aguardarRetorno()
   clear_console()
 }
 
