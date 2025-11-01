@@ -47,29 +47,50 @@ inicializarAmbiente <- function() {
   clear_console()
 }
 
+# Criar pasta para salvar imagens geradas
+criarPastaPlots <- function(pasta = "plots") {
+  caminho <- file.path(getwd(), pasta)
+  if (!dir.exists(caminho)) {
+    dir.create(caminho, recursive = TRUE)
+    cat("📁 Pasta criada para salvar imagens em:", caminho, "\n")
+  } else {
+    cat("📂 Pasta existente para salvar imagens:", caminho, "\n")
+  }
+  return(caminho)
+}
+
 
 # ==============================================================
 # === FUNÇÕES DE LEITURA E PRÉ-PROCESSAMENTO ===================
 # ==============================================================
 
-lerArquivo <- function() {
-  cat("Insira o arquivo para ser analisado:\n")
-  diretorio <- getwd()
-  cat("Diretório atual:", diretorio, "\n\n")
+lerArquivo <- function(pasta = "dados") {
+  # Caminho completo da pasta
+  diretorio <- file.path(getwd(), pasta)
 
+  # Verifica se a pasta existe
+  if (!dir.exists(diretorio)) {
+    stop(paste("Pasta", pasta, "não encontrada!"))
+  }
+
+  # Lista arquivos .txt
   arquivos_txt <- list.files(path = diretorio, pattern = "\\.txt$", full.names = TRUE)
-  if (length(arquivos_txt) == 0) stop("Nenhum arquivo .txt encontrado na pasta.")
 
-  cat("Arquivos .txt disponíveis:\n")
+  if (length(arquivos_txt) == 0) stop("Nenhum arquivo .txt encontrado na pasta!")
+
+  cat("📄 Arquivos disponíveis:\n \n")
   for (i in seq_along(arquivos_txt)) {
     cat(i, ":", basename(arquivos_txt[i]), "\n")
   }
 
   cat("\nDigite o número do arquivo que deseja ler: ")
   indice <- as.integer(readLines("stdin", n = 1))
-  if (is.na(indice) || indice < 1 || indice > length(arquivos_txt)) stop("Índice inválido!")
+  if (is.na(indice) || indice < 1 || indice > length(arquivos_txt)) stop("⚠️ Índice inválido!")
 
-  return(arquivos_txt[indice])
+  caminho_escolhido <- arquivos_txt[indice]
+  cat("\n✅ Arquivo selecionado:", basename(caminho_escolhido), "\n")
+  return(caminho_escolhido)
+  aguardarRetorno()
 }
 
 # Obter dados do grafo (tipo, vértices, arestas)
@@ -223,24 +244,35 @@ visitarArestas <- function(grafo) {
 plotarGrafo <- function(dados) {
   grafo <- dados$matriz_arestas
   tipo <- dados$tipo
-  nome_arquivo <- paste0("grafo_", tolower(tipo), ".png")
+
+  # Garante que a pasta "plots" exista
+  pasta_plots <- criarPastaPlots("plots")
+
+  # Nome do arquivo com data/hora para evitar sobrescrita
+  nome_arquivo <- paste0(
+    "grafo_", tolower(gsub(" ", "_", tipo)), "_",
+    format(Sys.time(), "%Y%m%d_%H%M%S"), ".png"
+  )
+  caminho_saida <- file.path(pasta_plots, nome_arquivo)
 
   g <- if (tipo == "Dirigido")
     igraph::graph_from_edgelist(as.matrix(grafo), directed = TRUE)
   else
     igraph::graph_from_edgelist(as.matrix(grafo), directed = FALSE)
 
-  png(nome_arquivo, width = 800, height = 600)
-  plot(g,
-       main = paste("Grafo", tipo),
-       vertex.color = "lightblue",
-       vertex.size = 20,
-       vertex.label.cex = 1.2,
-       edge.arrow.size = 0.5,
-       layout = igraph::layout_with_kk)
+  png(caminho_saida, width = 800, height = 600)
+  plot(
+    g,
+    main = paste("Grafo", tipo),
+    vertex.color = "lightblue",
+    vertex.size = 20,
+    vertex.label.cex = 1.2,
+    edge.arrow.size = 0.5,
+    layout = igraph::layout_with_kk
+  )
   dev.off()
 
-  cat("\nGrafo salvo como imagem em:", normalizePath(nome_arquivo), "\n")
+  cat("\nGrafo salvo em:", normalizePath(caminho_saida), "\n")
 }
 
 exibirGraficamente <- function(dados) {
@@ -266,14 +298,25 @@ dfsComunidades <- function(dados) {
 
   grafo <- dados$matriz_arestas
   tipo <- dados$tipo
-  vertices <- sort(unique(c(grafo$V1, grafo$V2)))
 
+  # --- Captura de todos os vértices ---
+  vertices <- unique(c(as.character(grafo$V1), as.character(grafo$V2)))
+
+  # --- Construção da lista de adjacência completa ---
   adj <- setNames(vector("list", length(vertices)), vertices)
-  for (i in 1:nrow(grafo)) {
+  for (i in seq_len(nrow(grafo))) {
     v1 <- as.character(grafo$V1[i])
     v2 <- as.character(grafo$V2[i])
+
     adj[[v1]] <- unique(c(adj[[v1]], v2))
-    if (tipo == "Não Dirigido") adj[[v2]] <- unique(c(adj[[v2]], v1))
+    if (tipo == "Não Dirigido") {
+      adj[[v2]] <- unique(c(adj[[v2]], v1))
+    }
+  }
+
+  # Garante que vértices isolados existam na lista
+  for (v in vertices) {
+    if (length(adj[[v]]) == 0) adj[[v]] <- character(0)
   }
 
   visitado <- setNames(rep(FALSE, length(vertices)), vertices)
@@ -285,22 +328,66 @@ dfsComunidades <- function(dados) {
     for (viz in adj[[v]]) {
       if (!visitado[[viz]]) grupo <- dfs(viz, grupo)
     }
-    grupo
+    return(grupo)
   }
 
+  # --- Busca por comunidades (componentes conexos) ---
   for (v in vertices) {
     if (!visitado[[v]]) {
       comunidade <- dfs(v, c())
-      comunidades <- append(comunidades, list(comunidade))
+      comunidades <- append(comunidades, list(sort(comunidade)))
     }
   }
 
   cat("Número de comunidades encontradas:", length(comunidades), "\n\n")
-  for (i in seq_along(comunidades))
+  for (i in seq_along(comunidades)) {
     cat("Comunidade", i, ":", paste(comunidades[[i]], collapse = ", "), "\n")
+  }
+
+  # --- Plotar e salvar resultado ---
+  pasta_plots <- criarPastaPlots("plots")
+  nome_arquivo <- paste0(
+    "comunidades_", tolower(gsub(" ", "_", tipo)), "_",
+    format(Sys.time(), "%Y%m%d_%H%M%S"), ".png"
+  )
+  caminho_saida <- file.path(pasta_plots, nome_arquivo)
+
+  g <- if (tipo == "Dirigido")
+    igraph::graph_from_edgelist(as.matrix(grafo), directed = TRUE)
+  else
+    igraph::graph_from_edgelist(as.matrix(grafo), directed = FALSE)
+
+  paleta <- rainbow(length(comunidades))
+  cores_vertices <- rep("gray80", length(V(g)))
+  nomes_vertices <- V(g)$name
+
+  for (i in seq_along(comunidades)) {
+    membros <- comunidades[[i]]
+    cores_vertices[nomes_vertices %in% membros] <- paleta[i]
+  }
+
+  png(caminho_saida, width = 900, height = 700)
+  plot(
+    g,
+    vertex.color = cores_vertices,
+    vertex.size = 25,
+    vertex.label.cex = 1.2,
+    edge.arrow.size = 0.5,
+    layout = igraph::layout_with_fr,
+    main = paste("Comunidades Detectadas -", tipo)
+  )
+  legend(
+    "bottomleft",
+    legend = paste("Comunidade", seq_along(comunidades)),
+    col = paleta, pch = 19, bty = "n", cex = 0.9
+  )
+  dev.off()
+
+  cat("\nImagem com comunidades salva em:", normalizePath(caminho_saida), "\n")
 
   aguardarRetorno()
 }
+
 
 
 # ==============================================================
