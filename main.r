@@ -43,7 +43,7 @@ inicializarAmbiente <- function() {
 
   lapply(pacotes_necessarios, library, character.only = TRUE)
 
-  cat("✅ Ambiente configurado e pacotes carregados!\n\n")
+  cat("Ambiente configurado e pacotes carregados!\n\n")
   clear_console()
 }
 
@@ -61,12 +61,12 @@ criarPastaPlots <- function(pasta = "plots") {
 
 # Trocar o arquivo de entrada sem sair do programa
 trocarArquivo <- function() {
+  clear_console()
   cat("\n🔄 Selecione um novo arquivo:\n")
   novo_arquivo <- lerArquivo()
   novo_dados <- obterDadosGrafo(novo_arquivo)
   novo_dados$arquivo <- novo_arquivo
   cat("\n✅ Arquivo alterado para:", basename(novo_arquivo), "\n")
-  aguardarRetorno()
   return(novo_dados)
 }
 
