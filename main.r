@@ -59,6 +59,18 @@ criarPastaPlots <- function(pasta = "plots") {
   return(caminho)
 }
 
+# Trocar o arquivo de entrada sem sair do programa
+trocarArquivo <- function() {
+  cat("\n🔄 Selecione um novo arquivo:\n")
+  novo_arquivo <- lerArquivo()
+  novo_dados <- obterDadosGrafo(novo_arquivo)
+  novo_dados$arquivo <- novo_arquivo
+  cat("\n✅ Arquivo alterado para:", basename(novo_arquivo), "\n")
+  aguardarRetorno()
+  return(novo_dados)
+}
+
+
 
 # ==============================================================
 # === FUNÇÕES DE LEITURA E PRÉ-PROCESSAMENTO ===================
@@ -452,8 +464,11 @@ louvainComunidades <- function(dados) {
 main <- function() {
   inicializarAmbiente()
   arquivo <- lerArquivo()
-  obterDadosGrafo(arquivo)
+  dados <- obterDadosGrafo(arquivo)
+  dados$arquivo <- arquivo  
+  return(dados)
 }
+
 
 menu <- function(dados) {
   grafo <- dados$matriz_arestas
@@ -463,6 +478,7 @@ menu <- function(dados) {
   while (opcao != 0) {
     clear_console()
     cat("=== ANÁLISE DE GRAFOS ===\n\n")
+    cat("📂 Arquivo atual:", basename(dados$arquivo), "\n\n")
     cat("1 - Ver dados do grafo\n")
     cat("2 - Exibir matriz de adjacência\n")
     cat("3 - Verificar adjacência entre vértices\n")
@@ -472,6 +488,7 @@ menu <- function(dados) {
     cat("7 - Exibir grafo graficamente\n")
     cat("8 - Analisar comunidades (DFS)\n")
     cat("9 - Analisar comunidades (Louvain)\n")
+    cat("10 - Trocar arquivo de entrada\n")
     cat("0 - Sair\n")
 
     cat("\nEscolha uma opção: ")
@@ -481,18 +498,20 @@ menu <- function(dados) {
     switch(as.character(opcao),
       "1" = exibirDadosGrafo(dados),
       "2" = exibirMatrizAdjacencia(dados),
-      "3" = verificarAdjacencia(grafo, tipo),
-      "4" = calcularGrau(grafo, tipo),
-      "5" = buscarVizinhos(grafo, tipo),
-      "6" = visitarArestas(grafo),
+      "3" = verificarAdjacencia(dados$matriz_arestas, dados$tipo),
+      "4" = calcularGrau(dados$matriz_arestas, dados$tipo),
+      "5" = buscarVizinhos(dados$matriz_arestas, dados$tipo),
+      "6" = visitarArestas(dados$matriz_arestas),
       "7" = exibirGraficamente(dados),
       "8" = dfsComunidades(dados),
       "9" = louvainComunidades(dados),
+      "10" = { dados <- trocarArquivo() },
       "0" = { cat("Encerrando programa...\n"); break },
       { cat("Opção inválida!\n"); aguardarRetorno() }
     )
   }
 }
+
 
 # Execução
 dados <- main()
