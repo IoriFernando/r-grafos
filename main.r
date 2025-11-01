@@ -388,7 +388,62 @@ dfsComunidades <- function(dados) {
   aguardarRetorno()
 }
 
+# ==============================================================
+# === ANÁLISE DE COMUNIDADES (LOUVAIN) =========================
+# ==============================================================
 
+louvainComunidades <- function(dados) {
+  clear_console()
+  cat("=== ANÁLISE DE COMUNIDADES (ALGORITMO DE LOUVAIN) ===\n\n")
+
+  grafo <- dados$matriz_arestas
+  tipo <- dados$tipo
+
+  # --- Cria o grafo com igraph ---
+  g <- if (tipo == "Dirigido")
+    igraph::graph_from_edgelist(as.matrix(grafo), directed = TRUE)
+  else
+    igraph::graph_from_edgelist(as.matrix(grafo), directed = FALSE)
+
+  # --- Detecção de comunidades ---
+  cat("🔍 Detectando comunidades com o método de Louvain...\n")
+  comunidade <- igraph::cluster_louvain(g)
+  num_comunidades <- length(unique(igraph::membership(comunidade)))
+
+  cat("\n✅ Número de comunidades encontradas:", num_comunidades, "\n\n")
+
+  # Exibir comunidades
+  for (i in seq_len(num_comunidades)) {
+    membros <- names(igraph::membership(comunidade))[igraph::membership(comunidade) == i]
+    cat("Comunidade", i, ":", paste(membros, collapse = ", "), "\n")
+  }
+
+  # --- Plotar e salvar ---
+  pasta_plots <- criarPastaPlots("plots")
+  nome_arquivo <- paste0(
+    "comunidades_louvain_", tolower(gsub(" ", "_", tipo)), "_",
+    format(Sys.time(), "%Y%m%d_%H%M%S"), ".png"
+  )
+  caminho_saida <- file.path(pasta_plots, nome_arquivo)
+
+  paleta <- rainbow(num_comunidades)
+  cores_vertices <- paleta[igraph::membership(comunidade)]
+
+  png(caminho_saida, width = 900, height = 700)
+  plot(
+    comunidade, g,
+    vertex.size = 25,
+    vertex.label.cex = 1.2,
+    edge.arrow.size = 0.5,
+    layout = igraph::layout_with_fr,
+    main = paste("Comunidades (Louvain) -", tipo)
+  )
+  dev.off()
+
+  cat("\n🖼️ Imagem com comunidades salva em:", normalizePath(caminho_saida), "\n")
+
+  aguardarRetorno()
+}
 
 # ==============================================================
 # === EXECUÇÃO PRINCIPAL E MENU ================================
@@ -416,6 +471,7 @@ menu <- function(dados) {
     cat("6 - Visitar todas as arestas\n")
     cat("7 - Exibir grafo graficamente\n")
     cat("8 - Analisar comunidades (DFS)\n")
+    cat("9 - Analisar comunidades (Louvain)\n")
     cat("0 - Sair\n")
 
     cat("\nEscolha uma opção: ")
@@ -431,6 +487,7 @@ menu <- function(dados) {
       "6" = visitarArestas(grafo),
       "7" = exibirGraficamente(dados),
       "8" = dfsComunidades(dados),
+      "9" = louvainComunidades(dados),
       "0" = { cat("Encerrando programa...\n"); break },
       { cat("Opção inválida!\n"); aguardarRetorno() }
     )
