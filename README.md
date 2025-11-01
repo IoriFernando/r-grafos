@@ -1,50 +1,100 @@
 # Análise de Grafos em R
+Este projeto oferece uma ferramenta completa para análise de grafos, permitindo carregar, visualizar e analisar estruturas de grafos a partir de arquivos de texto.
 
-Projeto em R para análise de grafos a partir de arquivos .txt, com suporte a grafos dirigidos e não dirigidos, exibição de dados, cálculo de grau de vértices, vizinhos, matriz de adjacência e plotagem gráfica.
+## 📋 Funcionalidades
+Carregamento de Grafos: Suporte a grafos dirigidos (D) e não-dirigidos (ND) a partir de arquivos .txt
 
-# Funcionalidades
-- Ler arquivos .txt contendo grafos (primeira linha: D para dirigido ou ND para não dirigido; demais linhas: pares de vértices separados por vírgula).
-- Exibir informações do grafo: número de vértices, número de arestas, lista de vértices. - Verificar adjacência entre dois vértices.
-- Calcular grau de vértices (entrada, saída e total para grafos dirigidos).
-- Buscar vizinhos de um vértice.
-- Listar todas as arestas do grafo.
-- Exibir graficamente o grafo e salvar como imagem .png.
-- Exibir matriz de adjacência.
+### Operações Básicas:
 
-# Requisitos
+- Exibição de dados do grafo (tipo, vértices, arestas)
+- Matriz de adjacência
+- Verificação de adjacência entre vértices
+- Cálculo de grau de vértices
+- Busca de vizinhos
+- Listagem de todas as arestas
+- Visualização gráfica do grafo
 
-- ```R >= 4.0```
-- Pacote igraph (instalado automaticamente na pasta library do projeto).
-- Sistema operacional Windows 
+## Análise de Comunidades:
 
-# Como usar
+- Algoritmo DFS para componentes conexos
+- Algoritmo de Louvain para detecção de comunidades
 
-- Coloque os arquivos .txt de grafos na mesma pasta do projeto.
-- Execute o script principal no R:
-```bash
-Rscript main.r
+## 🗂️ Estrutura de Arquivos
+```text
+projeto/
+├── dados/          # Pasta com arquivos .txt dos grafos
+├── plots/          # Pasta para salvar imagens geradas
+├── library/        # Pasta para pacotes R instalados
+└── script.R        # Script principal
 ```
-- Siga o menu interativo no terminal.
+
+## 📊 Formato do Arquivo de Entrada
+O arquivo deve seguir este formato:
 
 ```text
-Estrutura dos arquivos .txt
-D
+D  ou  ND
 1,2
-2,3
-3,1
+1,3
+2,4
+3,4
 ```
+- Primeira linha: "D" para dirigido, "ND" para não-dirigido
+- Linhas seguintes: Pares de vértices separados por vírgula
 
-- Primeira linha: tipo do grafo (D ou ND)
+## 🔍 Algoritmos de Busca de Comunidades
 
-- Demais linhas: pares de vértices (origem,destino)
+#### DFS (Depth-First Search)
+- Objetivo: Identificar componentes conexos em grafos
+- Funcionamento: Percorre o grafo em profundidade, agrupando vértices conectados
+- Complexidade: O(V + E)
+- Aplicação: Ideal para identificar componentes desconexos em grafos simples
 
-## Observações
+#### Algoritmo de Louvain
+- Objetivo: Detectar comunidades baseadas em modularidade
+- Funcionamento: Algoritmo hierárquico que maximiza a modularidade através de agregação
+- Complexidade: O(V log V)
+- Aplicação: Melhor para encontrar estrutura de comunidades em grafos complexos
 
-- Suporta grafos com vértices numéricos ou alfanuméricos.
+## 📈 Diferenças entre os Algoritmos
+| Característica | DFS | Louvain |
+|----------------|------|----------|
+| **Objetivo** | Componentes conexos | Maximizar modularidade |
+| **Complexidade** | Linear O(V+E) | Quase-linear O(V log V) |
+| **Resultados** | Grupos por conectividade | Comunidades por densidade |
+| **Aplicação** | Grafos simples | Grafos complexos |
+| **Hierarquia** | Não | Sim |
 
-- O script cria uma pasta library para dependências locais.
+# 🚀 Como Usar
+- Coloque seus arquivos de grafo na pasta dados/
+- Execute o script R
+- Escolha o arquivo desejado
+- Navegue pelo menu para realizar análises
 
-| Método      | Tipo de Detecção                           | Ideal para                        |
-| ----------- | ------------------------------------------ | --------------------------------- |
-| **DFS**     | Componentes desconectados                  | Testes simples e grafos separados |
-| **Louvain** | Comunidades densas (maximiza modularidade) | Redes grandes e conectadas        |
+## 📦 Dependências
+- igraph - Para manipulação e visualização de grafos
+
+O script gerencia automaticamente a instalação dos pacotes necessários.
+
+## 💡 Exemplo de Uso
+- Análise Básica: Verifique adjacência e graus dos vértices
+
+- Visualização: Gere imagens do grafo e suas comunidades
+
+- Comunidades: Compare resultados do DFS e Louvain
+
+- Troca de Arquivos: Alterne entre diferentes grafos sem sair do programa
+
+## 🎯 Resultados
+- Relatórios textuais com métricas do grafo
+
+- Imagens salvas automaticamente na pasta plots/
+
+- Análise comparativa entre métodos de detecção de comunidades
+
+### Exemplos usando o arquivo ```grafoNaoDirigito.txt```
+
+![grafo não dirigido](/img/grafo_não_dirigido_20251101_152100.png)
+![grafo busca dfs](/img/comunidades_não_dirigido_20251101_152102.png)
+![grafo busca louvain](/img/comunidades_louvain_não_dirigido_20251101_152104.png)
+
+Este projeto é ideal para aprendizado de teoria dos grafos e análise de redes sociais, biológicas ou quaisquer dados que possam ser representados como grafos.
