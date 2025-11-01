@@ -43,3 +43,8 @@ D
 - Suporta grafos com vértices numéricos ou alfanuméricos.
 
 - O script cria uma pasta library para dependências locais.
+
+| Método      | Tipo de Detecção                           | Ideal para                        |
+| ----------- | ------------------------------------------ | --------------------------------- |
+| **DFS**     | Componentes desconectados                  | Testes simples e grafos separados |
+| **Louvain** | Comunidades densas (maximiza modularidade) | Redes grandes e conectadas        |
