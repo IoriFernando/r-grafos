@@ -93,8 +93,22 @@ O script gerencia automaticamente a instalação dos pacotes necessários.
 
 ### Exemplos usando o arquivo ```grafoNaoDirigito.txt```
 
-![grafo não dirigido](/img/grafo_não_dirigido_20251101_152100.png)
-![grafo busca dfs](/img/comunidades_não_dirigido_20251101_152102.png)
-![grafo busca louvain](/img/comunidades_louvain_não_dirigido_20251101_152104.png)
+<table>
+  <tr>
+    <td>
+      <img src="/img/grafo_não_dirigido_20251101_152100.png" width="250">
+      <p align="center">Grafo Não Dirigido</p>
+    </td>
+    <td>
+      <img src="/img/comunidades_não_dirigido_20251101_152102.png" width="250">
+      <p align="center">Comunidades (DFS)</p>
+    </td>
+    <td>
+      <img src="/img/comunidades_louvain_não_dirigido_20251101_152104.png" width="250">
+      <p align="center">Comunidades (Louvain)</p>
+    </td>
+  </tr>
+</table>
+
 
 Este projeto é ideal para aprendizado de teoria dos grafos e análise de redes sociais, biológicas ou quaisquer dados que possam ser representados como grafos.
